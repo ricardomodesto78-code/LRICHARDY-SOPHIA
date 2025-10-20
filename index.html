@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Livro do Amor — RICHARDY & SOPHIA</title>
+  <style>
+    :root{
+      --paper:#f3ead6;
+      --paper-edge:#d7c9a6;
+      --leather:#6b4028;
+      --accent:#b6584b;
+      --font-main: "Georgia", "Times New Roman", serif;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#efe7d9 0%, #eddcc6 100%);font-family:var(--font-main);color:#2a2420}
+
+    /* Top menu */
+    .topbar{position:fixed;left:0;right:0;top:0;height:64px;background:rgba(40,30,25,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;gap:12px;padding:0 18px;z-index:50}
+    .logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:700}
+    .logo .dot{width:40px;height:40px;border-radius:6px;background:linear-gradient(180deg,var(--leather),#5a3424);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+    .menu{margin-left:auto;display:flex;gap:8px}
+    .btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.06);color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px}
+    .btn.small{padding:6px 8px;font-size:13px}
+
+    /* Stage */
+    .stage{height:100vh;display:flex;align-items:center;justify-content:center;padding-top:64px}
+    .book-wrap{width:900px;max-width:95vw;perspective:2000px}
+
+    /* Book */
+    .book{position:relative;width:100%;height:560px;margin:auto;transform-style:preserve-3d}
+    .page{position:absolute;top:0;bottom:0;left:0;right:0;width:50%;height:100%;transform-origin:left center;transform-style:preserve-3d;transition:transform 800ms cubic-bezier(.2,.9,.25,1);box-shadow:0 6px 18px rgba(0,0,0,0.35)}
+    .page.right{left:50%;transform-origin:right center}
+    .page.back{transform:rotateY(-180deg)}
+
+    .page-inner{position:relative;width:100%;height:100%;background:linear-gradient(180deg,var(--paper) 0%, #f9f2dd 100%);border:10px solid var(--paper-edge);box-sizing:border-box;padding:36px;overflow:hidden}
+    .page .cover{background:linear-gradient(180deg,#6b4028,#5a3424);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;border-radius:8px;height:100%}
+    .cover h1{font-family: 'Palatino Linotype','Georgia',serif;font-size:28px;letter-spacing:1px;margin:10px 0;text-align:center}
+    .cover .subtitle{margin-top:6px;font-size:14px;opacity:0.9}
+
+    /* spine */
+    .spine{position:absolute;left:calc(50% - 6px);top:0;bottom:0;width:12px;background:linear-gradient(180deg,#4a2f22,#5a3729);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03)}
+
+    /* individual pages layering */
+    .page.p0{z-index:30}
+    .page.p1{z-index:29}
+    .page.p2{z-index:28}
+    .page.p3{z-index:27}
+    .page.p4{z-index:26}
+
+    /* flipped state for left-side pages */
+    .page.flipped{transform:rotateY(-180deg)}
+
+    /* content area */
+    .content{height:100%;display:flex;flex-direction:column;gap:12px}
+    .page-number{font-size:12px;opacity:0.6}
+    .text{flex:1;overflow:auto;padding:8px;font-size:18px;line-height:1.5}
+    .text[contenteditable]{outline:none}
+    .image-placeholder{height:220px;border:2px dashed rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.45),transparent)}
+    .image-placeholder img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+
+    /* glossary popup */
+    .glossary{color:var(--accent);text-decoration:underline dotted;cursor:pointer}
+    .popup{position:fixed;z-index:200;background:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.25);max-width:260px;font-size:14px;color:#1a1a1a}
+    .popup .close{position:absolute;top:6px;right:8px;cursor:pointer;font-weight:700}
+
+    /* edit overlay */
+    .panel{position:fixed;right:18px;bottom:18px;background:linear-gradient(180deg,#fff,#f7f2ea);width:320px;border-radius:12px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,0.2);z-index:80}
+    .panel h3{margin:4px 0 8px 0}
+    .smallinput{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px}
+    .hint{font-size:13px;color:#555}
+
+    /* responsive */
+    @media (max-width:640px){.book{height:420px}.page-inner{padding:18px}.panel{width:92vw}}
+
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo"><div class="dot">R&S</div><div>Livro do Amor</div></div>
+    <div class="menu">
+      <button class="btn" id="openBook">Abrir Livro</button>
+      <button class="btn" id="editMode">Editar Páginas</button>
+      <label class="btn small" for="imgUpload" style="cursor:pointer">Enviar Foto</label>
+      <input id="imgUpload" type="file" accept="image/*" style="display:none">
+      <button class="btn" id="exportBtn">Exportar</button>
+      <button class="btn" id="importBtn">Importar</button>
+    </div>
+  </div>
+
+  <main class="stage">
+    <div class="book-wrap" id="bookWrap">
+      <div class="book" id="book">
+
+        <!-- left cover (page 0) -->
+        <div class="page p0 left" data-index="0">
+          <div class="page-inner">
+            <div class="cover">
+              <h1>Livro do Amor<br><small style="font-size:14px;letter-spacing:1px">de RICHARDY E SOPHIA</small></h1>
+              <div class="subtitle">Um livro com histórias, memórias e fotos — feito com carinho.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- spine -->
+        <div class="spine" aria-hidden></div>
+
+        <!-- right cover (back of cover) visual -->
+        <div class="page p1 right" data-index="1">
+          <div class="page-inner">
+            <div class="content">
+              <div style="text-align:center;margin-top:40px;font-size:16px;font-style:italic">Abra e vire as páginas — cada folha guarda um pedacinho do nosso amor.</div>
+              <div class="page-number">Capa interna</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Example story pages (editable) -->
+        <div class="page p2 left" data-index="2">
+          <div class="page-inner">
+            <div class="content">
+              <div class="text" contenteditable id="text-2">Era uma vez, em um dia ensolarado, quando nos conhecemos por acaso. <span class="glossary" data-term="saudade">saudade</span> apareceu logo depois, e não nos deixou mais.</div>
+              <div class="image-placeholder" data-page="2">Clique em "Enviar Foto" e depois em "Inserir na página atual" para adicionar uma foto aqui.</div>
+              <div class="page-number">Página 1</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page p3 right" data-index="3">
+          <div class="page-inner">
+            <div class="content">
+              <div class="text" contenteditable id="text-3">Lembro do seu riso como música. Em noites longas, seu abraço foi meu refúgio — e nossos planos viraram promessas.</div>
+              <div class="image-placeholder" data-page="3"></div>
+              <div class="page-number">Página 2</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page p4 left" data-index="4">
+          <div class="page-inner">
+            <div class="content">
+              <div class="text" contenteditable id="text-4">Hoje e sempre, acredito que o amor é feita de pequenas gentilezas — um café, uma nota deixada na bolsa, um abraço inesperado.</div>
+              <div class="image-placeholder" data-page="4"></div>
+              <div class="page-number">Página 3</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- edit panel -->
+    <aside class="panel" id="panel">
+      <h3>Controles rápidos</h3>
+      <div class="hint">Navegação:</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn small" id="prevPage">‹ Página</button>
+        <button class="btn small" id="nextPage">Página ›</button>
+      </div>
+      <div class="hint">Página atual: <span id="currentIndex">1</span></div>
+      <hr>
+      <div class="hint">Editar texto da página atual</div>
+      <textarea id="pageEditor" class="smallinput" rows="4" placeholder="Edite aqui o texto da página atual"></textarea>
+      <button class="btn" id="saveText">Salvar texto</button>
+      <hr>
+      <div class="hint">Fotos</div>
+      <button class="btn" id="insertImg">Inserir na página atual</button>
+      <hr>
+      <div class="hint">Glossário (toque para ver explicação)</div>
+      <ul id="glossList" style="padding-left:18px;margin:8px 0 0 0"></ul>
+      <hr>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="saveAll">Salvar tudo (local)</button>
+        <button class="btn" id="resetBtn">Restaurar exemplo</button>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- popup container -->
+  <div id="popupRoot" style="display:none"></div>
+
+  <script>
+    // Simple interactive book script
+    const pages = Array.from(document.querySelectorAll('.page'));
+    let current = 2; // start at first story page (data-index 2)
+    const maxIndex = Math.max(...pages.map(p=>Number(p.dataset.index)));
+
+    const updateView = ()=>{
+      // flip pages on the left of current
+      pages.forEach(p=>{
+        const idx = Number(p.dataset.index);
+        // left pages (index <= current-1) should be flipped
+        if(idx <= current-1){
+          p.classList.add('flipped');
+        } else {
+          p.classList.remove('flipped');
+        }
+      });
+      document.getElementById('currentIndex').textContent = Math.max(1, current-1);
+      // load editor content
+      const editor = document.getElementById('pageEditor');
+      const textEl = document.querySelector('.page[data-index="'+current+'"] .text');
+      if(textEl) editor.value = textEl.innerText.trim(); else editor.value = '';
+    }
+
+    document.getElementById('nextPage').addEventListener('click', ()=>{
+      if(current < maxIndex) current++;
+      updateView();
+    });
+    document.getElementById('prevPage').addEventListener('click', ()=>{
+      if(current > 1) current--;
+      updateView();
+    });
+
+    document.getElementById('saveText').addEventListener('click', ()=>{
+      const editor = document.getElementById('pageEditor');
+      const textEl = document.querySelector('.page[data-index="'+current+'"] .text');
+      if(textEl){
+        textEl.innerText = editor.value;
+        scanGlossary(textEl);
+        saveToLocal();
+        alert('Texto salvo na página atual.');
+      }
+    });
+
+    // keyboard navigation
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowRight') document.getElementById('nextPage').click();
+      if(e.key === 'ArrowLeft') document.getElementById('prevPage').click();
+    });
+
+    // export / import
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const data = gatherBookData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'livro_do_amor.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('importBtn').addEventListener('click', ()=>{
+      const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
+      inp.onchange = ()=>{
+        const f = inp.files[0]; if(!f) return;
+        const r = new FileReader(); r.onload = ()=>{
+          try{
+            const obj = JSON.parse(r.result);
+            loadBookData(obj);
+            alert('Importado com sucesso.');
+          }catch(err){alert('Arquivo inválido.');}
+        }; r.readAsText(f);
+      };
+      inp.click();
+    });
+
+    // images: upload then insert
+    let lastUploadedDataURL = null;
+    document.getElementById('imgUpload').addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{ lastUploadedDataURL = reader.result; alert('Imagem pronta — clique em Inserir na página atual.'); };
+      reader.readAsDataURL(f);
+    });
+
+    document.getElementById('insertImg').addEventListener('click', ()=>{
+      if(!lastUploadedDataURL){ alert('Nenhuma imagem carregada. Use o botão "Enviar Foto" primeiro.'); return; }
+      const ph = document.querySelector('.page[data-index="'+current+'"] .image-placeholder');
+      if(!ph){ alert('Esta página não tem área para imagens.'); return; }
+      ph.innerHTML = '';
+      const img = document.createElement('img'); img.src = lastUploadedDataURL; ph.appendChild(img);
+      saveToLocal();
+      lastUploadedDataURL = null; document.getElementById('imgUpload').value='';
+    });
+
+    // save everything to localStorage
+    function gatherBookData(){
+      const pagesData = pages.map(p=>{
+        const idx = p.dataset.index;
+        const textEl = p.querySelector('.text');
+        const imgEl = p.querySelector('.image-placeholder img');
+        return {index:idx, text: textEl ? textEl.innerText : '', img: imgEl ? imgEl.src : null};
+      });
+      return {pages:pagesData, savedAt: new Date().toISOString() };
+    }
+    function saveToLocal(){ localStorage.setItem('livro_do_amor', JSON.stringify(gatherBookData())); }
+    function loadFromLocal(){ const raw = localStorage.getItem('livro_do_amor'); if(raw) loadBookData(JSON.parse(raw)); }
+    function loadBookData(obj){ if(!obj.pages) return; obj.pages.forEach(pd=>{
+        const p = document.querySelector('.page[data-index="'+pd.index+'"]'); if(!p) return;
+        const te = p.querySelector('.text'); if(te && pd.text) te.innerText = pd.text;
+        const ph = p.querySelector('.image-placeholder'); if(ph){ ph.innerHTML = ''; if(pd.img){ const img = document.createElement('img'); img.src = pd.img; ph.appendChild(img);} }
+      }); scanAllGlossary(); }
+
+    document.getElementById('saveAll').addEventListener('click', ()=>{ saveToLocal(); alert('Salvo localmente.'); });
+    document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('Restaurar o exemplo apagará seus textos e imagens salvos localmente. Continuar?')){ localStorage.removeItem('livro_do_amor'); location.reload(); } });
+
+    // Glossary
+    const glossary = {
+      'saudade':'Sentimento de ausência de alguém querido; mistura de afeto, memória e desejo de reencontro.',
+      'refúgio':'Lugar ou situação que traz segurança, conforto e proteção emocional.'
+    };
+
+    function scanGlossary(root){
+      const text = root.innerHTML;
+      // For the examples, we only wrap known words when user saves text — but avoid double-wrapping
+      let out = text;
+      Object.keys(glossary).forEach(term=>{
+        // replace whole word occurrences (simple)
+        const re = new RegExp('\\b'+term+'\\b','gi');
+        out = out.replace(re, (match)=>`<span class="glossary" data-term="${term}">${match}</span>`);
+      });
+      root.innerHTML = out;
+    }
+    function scanAllGlossary(){ document.querySelectorAll('.text').forEach(t=>scanGlossary(t)); renderGlossList(); }
+
+    function renderGlossList(){
+      const list = document.getElementById('glossList'); list.innerHTML='';
+      Object.keys(glossary).forEach(k=>{ const li=document.createElement('li'); li.textContent = k + ' — ' + glossary[k].slice(0,60)+'...'; list.appendChild(li); });
+    }
+
+    // popup handler
+    function showPopup(term, x, y){
+      const root = document.getElementById('popupRoot'); root.style.display='block'; root.innerHTML = '';
+      const pop = document.createElement('div'); pop.className='popup'; pop.style.left=(x+8)+'px'; pop.style.top=(y+8)+'px';
+      pop.innerHTML = `<div class="close">✕</div><strong>${term}</strong><div style="margin-top:6px">${glossary[term]}</div>`;
+      pop.querySelector('.close').onclick = ()=>{ root.style.display='none'; root.innerHTML=''; };
+      root.appendChild(pop);
+    }
+
+    // delegate clicks on glossary terms
+    document.body.addEventListener('click', (e)=>{
+      const g = e.target.closest('.glossary');
+      if(g){ const t = g.dataset.term; const rect = g.getBoundingClientRect(); showPopup(t, rect.right, rect.top); }
+    });
+
+    // initial setup
+    updateView(); loadFromLocal(); scanAllGlossary();
+
+    // small convenience: open book button toggles view to first story page
+    document.getElementById('openBook').addEventListener('click', ()=>{ current = 2; updateView(); });
+    document.getElementById('editMode').addEventListener('click', ()=>{ const el = document.getElementById('panel'); el.style.display = (el.style.display === 'none') ? 'block' : 'block'; });
+
+    // On click page selection
+    pages.forEach(p=>p.addEventListener('click', ()=>{ current = Number(p.dataset.index); updateView(); }));
+
+    // Touch: simple swipe gesture
+    let startX = null;
+    document.getElementById('bookWrap').addEventListener('touchstart', e=>{ startX = e.touches[0].clientX; });
+    document.getElementById('bookWrap').addEventListener('touchend', e=>{ if(startX===null) return; const dx = e.changedTouches[0].clientX - startX; if(dx < -40) document.getElementById('nextPage').click(); if(dx > 40) document.getElementById('prevPage').click(); startX=null; });
+
+    // Accessibility: allow double click to edit text directly
+    document.querySelectorAll('.text').forEach(t=>{ t.addEventListener('dblclick', ()=>{ t.focus(); }); });
+
+    // Explanatory hint: small alert on first load (only once)
+    if(!localStorage.getItem('seen_hint')){
+      alert('Dica rápida: use as setas ← → ou os botões do painel para virar as páginas. Use "Enviar Foto" + "Inserir na página atual" para adicionar imagens. Salve em "Salvar tudo".');
+      localStorage.setItem('seen_hint','1');
+    }
+  </script>
+</body>
+</html>
